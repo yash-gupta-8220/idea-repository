@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Idea Repository</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .idea {
+            background: #f9f9f9;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid green;
+        }
+
+        .commentBox {
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>💡 Idea Repository</h1>
+
+    <input id="title" placeholder="Title">
+    <input id="description" placeholder="Description">
+    <input id="domain" placeholder="Domain">
+
+    <button onclick="addIdea()">Submit Idea</button>
+
+    <input id="search" placeholder="Search..." onkeyup="searchIdeas()">
+
+    <div id="ideas"></div>
+</div>
+
+<script>
+const API = "http://localhost:3000/ideas";
+let allIdeas = [];
+
+// Add Idea
+async function addIdea() {
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const domain = document.getElementById("domain").value;
+
+    await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, domain })
+    });
+
+    loadIdeas();
+}
+
+// Load Ideas
+async function loadIdeas() {
+    const res = await fetch(API);
+    allIdeas = await res.json();
+    displayIdeas(allIdeas);
+}
+
+// Display Ideas
+function displayIdeas(data) {
+    const ideasDiv = document.getElementById("ideas");
+
+    ideasDiv.innerHTML = data.map(i => `
+        <div class="idea">
+            <b>${i.title}</b> (${i.domain})<br>
+            ${i.description}
+
+            <br><br>
+
+            <!-- Comment Input -->
+            <input class="commentBox" id="c_${i._id}" placeholder="Write comment">
+            <button onclick="addComment('${i._id}')">Comment</button>
+
+            <!-- Show Comments -->
+            <div>
+                ${
+                    i.comments && i.comments.length > 0
+                    ? i.comments.map(c => <p>💬 ${c}</p>).join("")
+                    : ""
+                }
+            </div>
+        </div>
+    `).join("");
+}
+
+// Add Comment
+async function addComment(id) {
+    const text = document.getElementById("c_" + id).value;
+
+    await fetch(API + "/" + id + "/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: text })
+    });
+
+    loadIdeas();
+}
+
+// Search
+function searchIdeas() {
+    const value = document.getElementById("search").value.toLowerCase();
+
+    const filtered = allIdeas.filter(i =>
+        i.title.toLowerCase().includes(value) ||
+        i.description.toLowerCase().includes(value) ||
+        i.domain.toLowerCase().includes(value)
+    );
+
+    displayIdeas(filtered);
+}
+
+// Initial Load
+loadIdeas();
+</script>
+
+</body>
+</html>
